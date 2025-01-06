@@ -53,7 +53,21 @@ export class MapsService {
     }
   }
   
-
+  async getGeocode(address: string): Promise<{ lat: string; lng: string }> {
+    const url = `${this.googleBaseUrl}/geocode/json?address=${encodeURIComponent(address)}&key=${this.googleApiKey}`;
+    const response = await this.httpService.get(url).toPromise();
+  
+    if (response.data.results.length === 0) {
+      throw new Error('Endereço não encontrado.');
+    }
+  
+    const location = response.data.results[0].geometry.location;
+    return {
+      lat: location.lat.toString(),
+      lng: location.lng.toString(),
+    };
+  }
+  
   private async getCoordinatesFromOpenCage(address: string): Promise<any> {
     const url = `${this.opencageBaseUrl}/json?q=${encodeURIComponent(address)}&key=${this.opencageApiKey}`;
     const response = await this.httpService.get(url).toPromise();

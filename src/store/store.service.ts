@@ -18,8 +18,18 @@ export class StoreService {
 
   ) {}
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
-    const newStore = new this.storeModel(createStoreDto);
-    return newStore.save();
+   
+    const address = `${createStoreDto.address1}, ${createStoreDto.city}, ${createStoreDto.state}, ${createStoreDto.country}, ${createStoreDto.postalCode}`;
+
+    const { lat, lng } = await this.mapsService.getGeocode(address);
+
+    const newStore = new this.storeModel({
+      ...createStoreDto,
+      latitude: lat,
+      longitude: lng,
+    });
+
+    return await newStore.save();
   }
 
   async listAll(): Promise<Store[]> {
@@ -35,11 +45,40 @@ export class StoreService {
   }
 
   async update(id: string, updateStoreDto: UpdateStoreDto): Promise<Store> {
-    await this.ensureStoreExists(id);
+    // Certifique-se de que a loja existe
+    const existingStore = await this.storeModel.findById(id).exec();
+    if (!existingStore) {
+      throw new Error(`Loja com ID ${id} não encontrada.`);
+    }
+  
+    // Verificar se o endereço foi alterado
+    const addressChanged = ['address1', 'city', 'state', 'postalCode', 'country'].some(
+      (field) => updateStoreDto[field] && updateStoreDto[field] !== existingStore[field],
+    );
+  
+    if (addressChanged) {
+      // Montar o novo endereço
+      const newAddress = `
+      ${ updateStoreDto.address1 || existingStore.address1}, 
+      ${ updateStoreDto.city || existingStore.city}, 
+      ${ updateStoreDto.state || existingStore.state},
+      ${ updateStoreDto.country || existingStore.country}, 
+      ${updateStoreDto.postalCode || existingStore.postalCode}`;
+  
+      // Obter as novas coordenadas
+      const { lat, lng } = await this.mapsService.getGeocode(newAddress);
+  
+      // Atualizar latitude e longitude no DTO
+      updateStoreDto.latitude = lat;
+      updateStoreDto.longitude = lng;
+    }
+  
+    // Atualizar os campos no banco de dados
     return this.storeModel
       .findByIdAndUpdate(id, { $set: updateStoreDto }, { new: true })
       .exec();
   }
+  
 
   async remove(id: string): Promise<void> {
     await this.ensureStoreExists(id);

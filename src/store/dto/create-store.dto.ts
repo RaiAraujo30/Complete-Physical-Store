@@ -16,13 +16,6 @@ export class CreateStoreDto {
   @IsNumber()
   shippingTimeInDays: number;
 
-  @ApiProperty({ description: 'Latitude of the store', example: '-23.550520' })
-  @IsString()
-  latitude: string;
-
-  @ApiProperty({ description: 'Longitude of the store', example: '-46.633308' })
-  @IsString()
-  longitude: string;
 
   @ApiProperty({ description: 'Main address of the store', example: 'Rua das Flores, 123' })
   @IsString()
