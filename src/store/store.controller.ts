@@ -36,4 +36,9 @@ export class StoreController {
   async findByState(@Param('state') state: string) {
     return this.storeService.findByState(state);
   }
+
+  @Get('cep/:cep')
+  async findByCep(@Param('cep') cep: string) {
+    return this.storeService.getStoresWithShipping(cep);
+  }
 }
