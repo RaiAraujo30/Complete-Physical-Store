@@ -70,7 +70,7 @@ export class StoreController {
   @ApiResponse({ status: 400, description: 'Invalid CEP provided.' })
   async findByCep(@Param('cep') cep: string) {
     this.validateCep(cep);
-    return this.storeService.getStoresWithShipping(cep);
+    return this.storeService.getStoreWithShipping(cep);
   }
 
   private validateCep(cep: string): void {

@@ -63,9 +63,9 @@ export class StoreService {
       throw new NotFoundException(`Store with ID ${id} not found`);
     }
   }
-  async calculateDistancesFromCep(cep: string): Promise<{ store: Store; distance: number }[]> {
+  async calculateDistancesFromCep(cep: string): Promise<{ store: Store; distance: number } | null> {
     const stores = await this.listAll();
-
+  
     const distances = await Promise.all(
       stores.map(async (store) => {
         const distance = await this.calculateDistances(cep, `${store.latitude},${store.longitude}`);
@@ -75,9 +75,14 @@ export class StoreService {
         return null;
       }),
     );
-
-    return distances.filter((item) => item !== null).sort((a, b) => a.distance - b.distance);
+  
+    const validDistances = distances.filter((item) => item !== null);
+    if (validDistances.length === 0) return null; // Nenhuma loja válida encontrada
+  
+    // Retornar a loja mais próxima
+    return validDistances.sort((a, b) => a.distance - b.distance)[0];
   }
+  
 
   private async calculateDistances(origin: string, destination: string): Promise<number | null> {
     try {
@@ -90,23 +95,29 @@ export class StoreService {
     }
   }
 
-  async getStoresWithShipping(cep: string): Promise<{ stores: any[]; pins: any[] }> {
-    const distances = await this.calculateDistancesFromCep(cep);
-    const stores = [];
-    const pins = [];
-
-    for (const { store, distance } of distances) {
-      pins.push(this.createPin(store));
-
-      if (store.type === 'PDV' && distance <= 50) {
-        stores.push(this.createPdvStoreWithFixedShipping(store, distance));
-      } else {
-        stores.push(await this.createStoreWithDynamicShipping(store, cep, distance));
-      }
+  async getStoreWithShipping(cep: string): Promise<{ store: any; pins: any[] }> {
+    const nearestStore = await this.calculateDistancesFromCep(cep);
+  
+    if (!nearestStore) {
+      return {
+        store: null,
+        pins: [],
+      };
     }
-
-    return { stores, pins };
+  
+    const { store, distance } = nearestStore;
+    const pins = [this.createPin(store)];
+  
+    let storeWithShipping;
+    if (store.type === 'PDV' && distance <= 50) {
+      storeWithShipping = this.createPdvStoreWithFixedShipping(store, distance);
+    } else {
+      storeWithShipping = await this.createStoreWithDynamicShipping(store, cep, distance);
+    }
+  
+    return { store: storeWithShipping, pins };
   }
+  
 
   private createPin(store: Store): any {
     return {
