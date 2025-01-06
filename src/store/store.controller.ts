@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
 import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
@@ -8,27 +8,32 @@ export class StoreController {
   constructor(private readonly storeService: StoreService) {}
 
   @Post()
-  create(@Body() createStoreDto: CreateStoreDto) {
+  async create(@Body() createStoreDto: CreateStoreDto) {
     return this.storeService.create(createStoreDto);
   }
 
   @Get()
-  findAll() {
-    return this.storeService.findAll();
+  async findAll() {
+    return this.storeService.listAll();
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.storeService.findOne(+id);
+  async findById(@Param('id') id: string) {
+    return this.storeService.findOne(id);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateStoreDto: UpdateStoreDto) {
-    return this.storeService.update(+id, updateStoreDto);
+  @Put(':id')
+  async update(@Param('id') id: string, @Body() updateStoreDto: UpdateStoreDto) {
+    return this.storeService.update(id, updateStoreDto);
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.storeService.remove(+id);
+  async delete(@Param('id') id: string) {
+    return this.storeService.remove(id);
+  }
+
+  @Get('state/:state')
+  async findByState(@Param('state') state: string) {
+    return this.storeService.findByState(state);
   }
 }
