@@ -4,9 +4,10 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 import { Store } from './entities/store.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { CorreiosService } from 'src/api/correios/correios.service';
-import { MapsService } from 'src/api/maps/maps.service';
+import { CorreiosService } from '../api/correios/correios.service';
+import { MapsService } from '../api/maps/maps.service';
 import { FreightValue, ShippingStore, StorePin } from './types/store.types';
+import { StoreType } from './enum/StoreType.enum';
 
 @Injectable()
 export class StoreService {
@@ -116,10 +117,14 @@ export class StoreService {
     );
   
     //TODO: Implementar com o uso de reduce
-    const validDistances = distances.filter((item) => item !== null);
-    if (validDistances.length === 0) return null; // Nenhuma loja válida encontrada
+    // ignores stores that are PDV and are more than 50km away
+    const validDistances = distances.filter((item) => {
+      if (!item) return false;
+      if (item.store.type === StoreType.PDV && item.distance > 50) return false;
+      return true;
+    });
+    if (validDistances.length === 0) return null;
   
-    // Retornar a loja mais próxima
     return validDistances.sort((a, b) => a.distance - b.distance)[0];
   }
   
@@ -135,7 +140,7 @@ export class StoreService {
     }
   }
 
-  async getStoreWithShipping(cep: string): Promise<{ store: Store; pins: StorePin}> {
+  async getStoreWithShipping(cep: string): Promise<{ store: ShippingStore; pins: StorePin}> {
     const nearestStore = await this.calculateDistancesFromCep(cep);
   
     if (!nearestStore) {
@@ -148,8 +153,9 @@ export class StoreService {
     const { store, distance } = nearestStore;
     const pins = this.createPin(store);
   
-    let storeWithShipping;
-    if (store.type === 'PDV' && distance <= 50) {
+    let storeWithShipping: ShippingStore;
+
+    if (distance <= 50) {
       storeWithShipping = this.createPdvStoreWithFixedShipping(store, distance);
     } else {
       storeWithShipping = await this.createStoreWithDynamicShipping(store, cep, distance);
