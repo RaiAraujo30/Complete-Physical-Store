@@ -9,7 +9,7 @@ export class CorreiosService {
 
   constructor(private readonly httpService: HttpService) {}
 
-  async calculateFreight(data: any): Promise<any> {
+  async calculateFreight(data: FreightRequestPayload): Promise<FreightResponse[]> {
 
     // payload for the open API request
     const payload = {

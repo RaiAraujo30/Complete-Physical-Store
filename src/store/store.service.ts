@@ -4,9 +4,9 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 import { Store } from './entities/store.entity';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { async } from 'rxjs';
 import { CorreiosService } from 'src/api/correios/correios.service';
 import { MapsService } from 'src/api/maps/maps.service';
+import { FreightValue, ShippingStore, StorePin } from './types/store.types';
 
 @Injectable()
 export class StoreService {
@@ -115,6 +115,7 @@ export class StoreService {
       }),
     );
   
+    //TODO: Implementar com o uso de reduce
     const validDistances = distances.filter((item) => item !== null);
     if (validDistances.length === 0) return null; // Nenhuma loja válida encontrada
   
@@ -134,18 +135,18 @@ export class StoreService {
     }
   }
 
-  async getStoreWithShipping(cep: string): Promise<{ store: any; pins: any[] }> {
+  async getStoreWithShipping(cep: string): Promise<{ store: Store; pins: StorePin}> {
     const nearestStore = await this.calculateDistancesFromCep(cep);
   
     if (!nearestStore) {
       return {
         store: null,
-        pins: [],
+        pins: null,
       };
     }
   
     const { store, distance } = nearestStore;
-    const pins = [this.createPin(store)];
+    const pins = this.createPin(store);
   
     let storeWithShipping;
     if (store.type === 'PDV' && distance <= 50) {
@@ -158,7 +159,7 @@ export class StoreService {
   }
   
 
-  private createPin(store: Store): any {
+  private createPin(store: Store): StorePin  {
     return {
       position: {
         lat: parseFloat(store.latitude),
@@ -168,7 +169,7 @@ export class StoreService {
     };
   }
 
-  private createPdvStoreWithFixedShipping(store: Store, distance: number): any {
+  private createPdvStoreWithFixedShipping(store: Store, distance: number): ShippingStore {
     return {
       name: store.storeName,
       city: store.city,
@@ -185,11 +186,7 @@ export class StoreService {
     };
   }
 
-  private async createStoreWithDynamicShipping(
-    store: Store,
-    cep: string,
-    distance: number,
-  ): Promise<any> {
+  private async createStoreWithDynamicShipping(store: Store, cep: string, distance: number,): Promise<ShippingStore> {
     try {
       const freightValues = await this.correiosService.calculateFreight({
         cepDestino: this.cleanCep(cep),
@@ -205,7 +202,7 @@ export class StoreService {
         postalCode: store.postalCode,
         type: store.type,
         distance: `${distance} km`,
-        value: freightValues.map((freight: any) => ({
+        value: freightValues.map((freight: FreightValue) => ({
           price: freight.precoAgencia,
           prazo: freight.prazo,
           description: freight.urlTitulo,

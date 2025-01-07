@@ -10,7 +10,7 @@ export class MapsService {
 
   constructor(private readonly httpService: HttpService) {}
 
-  async calculateDistance(origin: string, destination: string): Promise<any> {
+  async calculateDistance(origin: string, destination: string): Promise<GoogleDistanceMatrixResponse> {
     // use the google maps distance Matrix to calculate the distance between two locations
     const url = `${this.googleBaseUrl}/distancematrix/json?origins=${origin}&destinations=${destination}&key=${this.googleApiKey}`;
 
@@ -32,7 +32,7 @@ export class MapsService {
   }
 
   // get the coordinates from the origin and destination using OpenCageData API
-  private async getFallbackCoordinates(origin: string, destination: string): Promise<any> {
+  private async getFallbackCoordinates(origin: string, destination: string): Promise<FallbackCoordinates> {
     try {
       // use promise.all to make both requests at the same time
       const [originGeocode, destinationGeocode] = await Promise.all([
@@ -53,6 +53,7 @@ export class MapsService {
     }
   }
   
+  // the interface coordenate use 2 numbers, lat and lng
   async getGeocode(address: string): Promise<{ lat: string; lng: string }> {
     const url = `${this.googleBaseUrl}/geocode/json?address=${encodeURIComponent(address)}&key=${this.googleApiKey}`;
     const response = await this.httpService.get(url).toPromise();
@@ -68,7 +69,7 @@ export class MapsService {
     };
   }
   
-  private async getCoordinatesFromOpenCage(address: string): Promise<any> {
+  private async getCoordinatesFromOpenCage(address: string): Promise<OpenCageCoordinates | null> {
     const url = `${this.opencageBaseUrl}/json?q=${encodeURIComponent(address)}&key=${this.opencageApiKey}`;
     const response = await this.httpService.get(url).toPromise();
 
