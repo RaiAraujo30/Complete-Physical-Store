@@ -8,6 +8,7 @@ import { CorreiosService } from '../api/correios/correios.service';
 import { MapsService } from '../api/maps/maps.service';
 import { FreightValue, ShippingStore, StorePin } from './types/store.types';
 import { StoreType } from './enum/StoreType.enum';
+import { paginate, PaginatedResult } from 'src/utils/Pagination';
 
 @Injectable()
 export class StoreService {
@@ -22,6 +23,7 @@ export class StoreService {
    
     const address = `${createStoreDto.address1}, ${createStoreDto.city}, ${createStoreDto.state}, ${createStoreDto.country}, ${createStoreDto.postalCode}`;
 
+    // automatically get the latitude and longitude from the address
     const { lat, lng } = await this.mapsService.getGeocode(address);
 
     const newStore = new this.storeModel({
@@ -33,32 +35,54 @@ export class StoreService {
     return await newStore.save();
   }
 
-  async listAll(): Promise<Store[]> {
-    return this.storeModel.find().exec();
+  async listAll(
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
+
+    //this.storeModel is all the collection of stores. {} is the query
+    const paginatedResult = await paginate(this.storeModel, {}, limit, offset);
+    return {
+      stores: paginatedResult.data,
+      limit: paginatedResult.pagination.limit,
+      offset: paginatedResult.pagination.offset,
+      total: paginatedResult.pagination.total,
+    };
   }
 
-  async findOne(id: string): Promise<Store> {
+  async findOne(
+    id: string,
+    limit: number = 1,
+    offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
     const store = await this.storeModel.findById(id).exec();
+  
     if (!store) {
       throw new NotFoundException(`Store with ID ${id} not found`);
     }
-    return store;
+  
+    return {
+      stores: [store], // It's an array just to keep the same structure as the listAll method
+      limit,
+      offset,
+      total: 1, // It's always 1
+    };
   }
 
   async update(id: string, updateStoreDto: UpdateStoreDto): Promise<Store> {
-    // Certifique-se de que a loja existe
+    
     const existingStore = await this.storeModel.findById(id).exec();
     if (!existingStore) {
       throw new Error(`Loja com ID ${id} não encontrada.`);
     }
   
-    // Verificar se o endereço foi alterado
+    // see if any address fields have changed
     const addressChanged = ['address1', 'city', 'state', 'postalCode', 'country'].some(
       (field) => updateStoreDto[field] && updateStoreDto[field] !== existingStore[field],
     );
   
     if (addressChanged) {
-      // Montar o novo endereço
+      // build the new address string
       const newAddress = `
       ${ updateStoreDto.address1 || existingStore.address1}, 
       ${ updateStoreDto.city || existingStore.city}, 
@@ -66,31 +90,41 @@ export class StoreService {
       ${ updateStoreDto.country || existingStore.country}, 
       ${updateStoreDto.postalCode || existingStore.postalCode}`;
   
-      // Obter as novas coordenadas
+      // automatically get the latitude and longitude from the address
       const { lat, lng } = await this.mapsService.getGeocode(newAddress);
   
-      // Atualizar latitude e longitude no DTO
+      // update the latitude and longitude in the DTO
       updateStoreDto.latitude = lat;
       updateStoreDto.longitude = lng;
     }
   
-    // Atualizar os campos no banco de dados
     return this.storeModel
       .findByIdAndUpdate(id, { $set: updateStoreDto }, { new: true })
       .exec();
   }
   
-
   async remove(id: string): Promise<void> {
     await this.ensureStoreExists(id);
     await this.storeModel.findByIdAndDelete(id).exec();
   }
 
-  async findByState(state: string): Promise<Store[]> {
+  async findByState(
+    state: string,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
     this.validateState(state);
-    return this.storeModel.find({ state: state.toUpperCase() }).exec();
-  }
+  
+  const paginatedResult = await paginate(this.storeModel, { state: state.toUpperCase() }, limit, offset);
 
+  return {
+    stores: paginatedResult.data,
+    limit: paginatedResult.pagination.limit,
+    offset: paginatedResult.pagination.offset,
+    total: paginatedResult.pagination.total,
+  };
+}
+  
   private validateState(state: string): void {
     if (!state || state.length !== 2) {
       throw new Error('Estado inválido. Use o formato "UF" (e.g., RS, SP).');
@@ -103,11 +137,11 @@ export class StoreService {
       throw new NotFoundException(`Store with ID ${id} not found`);
     }
   }
-  async calculateDistancesFromCep(cep: string): Promise<{ store: Store; distance: number } | null> {
+  async calculateDistancesFromCep(cep: string): Promise<{ store: Store; distance: number }[]> {
     const stores = await this.listAll();
   
     const distances = await Promise.all(
-      stores.map(async (store) => {
+      stores.stores.map(async (store) => {
         const distance = await this.calculateDistances(cep, `${store.latitude},${store.longitude}`);
         if (distance !== null) {
           return { store, distance };
@@ -125,7 +159,7 @@ export class StoreService {
     });
     if (validDistances.length === 0) return null;
   
-    return validDistances.sort((a, b) => a.distance - b.distance)[0];
+    return validDistances.sort((a, b) => a.distance - b.distance);
   }
   
 
@@ -140,30 +174,60 @@ export class StoreService {
     }
   }
 
-  async getStoreWithShipping(cep: string): Promise<{ store: ShippingStore; pins: StorePin}> {
-    const nearestStore = await this.calculateDistancesFromCep(cep);
-  
-    if (!nearestStore) {
+  async getStoreWithShipping(
+    cep: string,
+    limit: number = 10,
+    offset: number = 0,
+  ): Promise<{ 
+    stores: ShippingStore[]; 
+    pins: StorePin[]; 
+    limit: number; 
+    offset: number; 
+    total: number 
+  }> {
+    const validDistances = await this.calculateDistancesFromCep(cep);
+    
+    if (!validDistances) {
       return {
-        store: null,
-        pins: null,
+        stores: [],
+        pins: [],
+        limit,
+        offset,
+        total: 0,
       };
     }
   
-    const { store, distance } = nearestStore;
-    const pins = this.createPin(store);
+    const total = validDistances.length;
   
-    let storeWithShipping: ShippingStore;
-
-    if (distance <= 50) {
-      storeWithShipping = this.createPdvStoreWithFixedShipping(store, distance);
-    } else {
-      storeWithShipping = await this.createStoreWithDynamicShipping(store, cep, distance);
+    // Paginate the results
+    const paginatedDistances = validDistances.slice(offset, offset + limit);
+  
+    const storesWithShipping: ShippingStore[] = [];
+    const pins: StorePin[] = [];
+  
+    for (const { store, distance } of paginatedDistances) {
+      const pin = this.createPin(store);
+      pins.push(pin);
+  
+      let storeWithShipping: ShippingStore;
+  
+      if (distance <= 50) {
+        storeWithShipping = this.createPdvStoreWithFixedShipping(store, distance);
+      } else {
+        storeWithShipping = await this.createStoreWithDynamicShipping(store, cep, distance);
+      }
+  
+      storesWithShipping.push(storeWithShipping);
     }
   
-    return { store: storeWithShipping, pins };
+    return { 
+      stores: storesWithShipping, 
+      pins, 
+      limit, 
+      offset, 
+      total 
+    };
   }
-  
 
   private createPin(store: Store): StorePin  {
     return {
