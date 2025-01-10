@@ -9,6 +9,7 @@ import { MapsService } from '../api/maps/maps.service';
 import { FreightValue, ShippingStore, StorePin } from './types/store.types';
 import { StoreType } from './enum/StoreType.enum';
 import { paginate, PaginatedResult } from 'src/utils/Pagination';
+import { DeliveryCriteriaService } from 'src/delivery/delivery-criteria.service';
 
 @Injectable()
 export class StoreService {
@@ -17,6 +18,7 @@ export class StoreService {
     @InjectModel(Store.name) private readonly storeModel: Model<Store>,
     private readonly mapsService: MapsService,
     private readonly correiosService: CorreiosService,
+    private readonly deliveryCriteriaService: DeliveryCriteriaService,
 
   ) {}
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
@@ -212,7 +214,7 @@ export class StoreService {
       let storeWithShipping: ShippingStore;
   
       if (distance <= 50) {
-        storeWithShipping = this.createPdvStoreWithFixedShipping(store, distance);
+        storeWithShipping = await this.createPdvStoreWithFixedShipping(store, distance);
       } else {
         storeWithShipping = await this.createStoreWithDynamicShipping(store, cep, distance);
       }
@@ -239,7 +241,15 @@ export class StoreService {
     };
   }
 
-  private createPdvStoreWithFixedShipping(store: Store, distance: number): ShippingStore {
+  private async createPdvStoreWithFixedShipping(store: Store, distance: number): Promise<ShippingStore> {
+    const criteria = await this.deliveryCriteriaService.findAllSorted();
+
+    const matchedCriterion = criteria.find((c) => distance <= c.maxDistance);
+
+    if (!matchedCriterion) {
+      throw new Error('No delivery criteria found for the given distance.');
+    }
+  
     return {
       name: store.storeName,
       city: store.city,
@@ -248,13 +258,14 @@ export class StoreService {
       distance: `${distance} km`,
       value: [
         {
-          prazo: '1 dias úteis',
-          price: 'R$ 15,00',
-          description: 'Motoboy',
+          prazo: matchedCriterion.deliveryTime,
+          price: `R$ ${matchedCriterion.price.toFixed(2)}`,
+          description: matchedCriterion.deliveryMethod,
         },
       ],
     };
   }
+  
 
   private async createStoreWithDynamicShipping(store: Store, cep: string, distance: number,): Promise<ShippingStore> {
     try {
@@ -274,7 +285,7 @@ export class StoreService {
         distance: `${distance} km`,
         value: freightValues.map((freight: FreightValue) => ({
           price: freight.precoAgencia,
-          prazo: freight.prazo,
+          prazo: `${parseInt(store.shippingTimeInDays.toString(), 10) + parseInt(freight.prazo, 10)} dias úteis`,
           description: freight.urlTitulo,
         })),
       };

@@ -22,7 +22,7 @@ export class StoreController {
   @Get()
   @ApiOperation({ summary: 'Retrieve a list of all stores' })
   @ApiResponse({ status: 200, description: 'List of stores retrieved successfully.' })
-  async listAll(
+  async findAll(
     @Query('limit') limit: number = 10,
     @Query('offset') offset: number = 0,
   ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
@@ -34,7 +34,7 @@ export class StoreController {
   @ApiParam({ name: 'id', description: 'The ID of the store to retrieve' })
   @ApiResponse({ status: 200, description: 'Store retrieved successfully.' })
   @ApiResponse({ status: 404, description: 'Store not found.' })
-  async findOne(
+  async findById(
     @Param('id') id: string,
     @Query('limit') limit: number = 1,
     @Query('offset') offset: number = 0,
@@ -82,7 +82,7 @@ export class StoreController {
   @ApiParam({ name: 'cep', description: 'The postal code (CEP) to calculate distances' })
   @ApiResponse({ status: 200, description: 'Stores and shipping info retrieved successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid CEP provided.' })
-  async getStoreWithShipping(
+  async findByCep(
     @Param('cep') cep: string,
     @Query('limit') limit: number = 10,
     @Query('offset') offset: number = 0,
