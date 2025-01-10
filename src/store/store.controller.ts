@@ -1,8 +1,11 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query } from '@nestjs/common';
 import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
+import { Store } from './entities/store.entity';
+import { PaginatedResult } from 'src/utils/Pagination';
+import { ShippingStore, StorePin } from './types/store.types';
 
 @Controller('store')
 export class StoreController {
@@ -19,8 +22,11 @@ export class StoreController {
   @Get()
   @ApiOperation({ summary: 'Retrieve a list of all stores' })
   @ApiResponse({ status: 200, description: 'List of stores retrieved successfully.' })
-  async findAll() {
-    return this.storeService.listAll();
+  async findAll(
+    @Query('limit') limit: number = 10,
+    @Query('offset') offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
+    return this.storeService.listAll(+limit, +offset);
   }
 
   @Get(':id')
@@ -28,8 +34,12 @@ export class StoreController {
   @ApiParam({ name: 'id', description: 'The ID of the store to retrieve' })
   @ApiResponse({ status: 200, description: 'Store retrieved successfully.' })
   @ApiResponse({ status: 404, description: 'Store not found.' })
-  async findById(@Param('id') id: string) {
-    return this.storeService.findOne(id);
+  async findById(
+    @Param('id') id: string,
+    @Query('limit') limit: number = 1,
+    @Query('offset') offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
+    return this.storeService.findOne(id, +limit, +offset);
   }
 
   @Put(':id')
@@ -59,8 +69,12 @@ export class StoreController {
   @ApiParam({ name: 'state', description: 'The state abbreviation (e.g., SP, RJ)' })
   @ApiResponse({ status: 200, description: 'Stores retrieved successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid state abbreviation.' })
-  async findByState(@Param('state') state: string) {
-    return this.storeService.findByState(state);
+  async findByState(
+    @Param('state') state: string,
+    @Query('limit') limit: number = 10,
+    @Query('offset') offset: number = 0,
+  ): Promise<{ stores: Store[]; limit: number; offset: number; total: number }> {
+    return this.storeService.findByState(state, +limit, +offset);
   }
 
   @Get('cep/:cep')
@@ -68,9 +82,18 @@ export class StoreController {
   @ApiParam({ name: 'cep', description: 'The postal code (CEP) to calculate distances' })
   @ApiResponse({ status: 200, description: 'Stores and shipping info retrieved successfully.' })
   @ApiResponse({ status: 400, description: 'Invalid CEP provided.' })
-  async findByCep(@Param('cep') cep: string) {
-    this.validateCep(cep);
-    return this.storeService.getStoreWithShipping(cep);
+  async findByCep(
+    @Param('cep') cep: string,
+    @Query('limit') limit: number = 10,
+    @Query('offset') offset: number = 0,
+  ): Promise<{ 
+    stores: ShippingStore[]; 
+    pins: StorePin[]; 
+    limit: number; 
+    offset: number; 
+    total: number 
+  }> {
+    return this.storeService.getStoreWithShipping(cep, +limit, +offset);
   }
 
   private validateCep(cep: string): void {

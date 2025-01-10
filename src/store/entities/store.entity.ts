@@ -22,6 +22,12 @@ export class Store extends Document {
   @Prop({ required: true })
   address1: string;
 
+  @Prop({ required: false })
+  address2: string;
+
+  @Prop({ required: false })
+  address3: string;
+
   @Prop({ required: true })
   district: string;
 
