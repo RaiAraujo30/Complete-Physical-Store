@@ -5,7 +5,9 @@ import { UpdateStoreDto } from './dto/update-store.dto';
 import { ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Store } from './entities/store.entity';
 import { PaginatedResult } from 'src/utils/Pagination';
-import { ShippingStore, StorePin } from './types/store.types';
+import { ShippingStore } from './types/ShippingStore.interface';
+import { StorePin } from './types/StorePin.interface';
+
 
 @Controller('store')
 export class StoreController {
