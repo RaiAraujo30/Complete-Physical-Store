@@ -3,6 +3,7 @@ import { HttpService } from '@nestjs/axios';
 import { MapsService } from './maps.service';
 import { of, throwError } from 'rxjs';
 import { AxiosHeaders, AxiosResponse } from 'axios';
+import { ConfigService } from '@nestjs/config';
 
 describe('MapsService', () => {
   let service: MapsService;
@@ -14,12 +15,20 @@ describe('MapsService', () => {
 
   const consoleErrorMock = jest.spyOn(console, 'error').mockImplementation(() => {});
 
+  const mockConfigService = {
+    get: jest.fn((key: string) => {
+      if (key === 'GOOGLE_MAPS_API_KEY') return 'mock-google-maps-api-key';
+      if (key === 'OPENCAGE_API_KEY') return 'mock-opencage-api-key';
+      return null;
+    }),
+  };
 
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
         MapsService,
         { provide: HttpService, useValue: mockHttpService },
+        { provide: ConfigService, useValue: mockConfigService },
       ],
     }).compile();
 
@@ -72,7 +81,7 @@ describe('MapsService', () => {
 
       expect(result).toEqual(googleDistanceResponseMock.data);
       expect(mockHttpService.get).toHaveBeenCalledWith(
-        `${service['googleBaseUrl']}/distancematrix/json?origins=${origin}&destinations=${destination}&key=${process.env.GOOGLE_MAPS_API_KEY}`,
+        `${service['googleBaseUrl']}/distancematrix/json?origins=${origin}&destinations=${destination}&key=${mockConfigService.get('GOOGLE_MAPS_API_KEY')}`,
       );
     });
 
@@ -112,7 +121,7 @@ describe('MapsService', () => {
       mockHttpService.get.mockReturnValue(of(emptyGeocodeResponseMock));
 
       await expect(service.getGeocode(address)).rejects.toThrow(
-        'Endereço não encontrado.',
+        'Failed to retrieve geocode from Google Maps API',
       );
     });
   });

@@ -1,15 +1,22 @@
 import { Injectable } from '@nestjs/common';
 import { HttpService } from '@nestjs/axios';
-import { AppError } from 'src/utils/AppError';
+import { AppError } from '../../common/exceptions/AppError';
+import { ConfigService } from '@nestjs/config';
 
 @Injectable()
 export class MapsService {
-  private readonly googleApiKey = process.env.GOOGLE_MAPS_API_KEY;
-  private readonly opencageApiKey = process.env.OPENCAGE_API_KEY;
+  private readonly googleApiKey: string;
+  private readonly opencageApiKey: string;
   private readonly googleBaseUrl = 'https://maps.googleapis.com/maps/api';
   private readonly opencageBaseUrl = 'https://api.opencagedata.com/geocode/v1';
 
-  constructor(private readonly httpService: HttpService) {}
+  constructor(
+    private readonly httpService: HttpService,
+    private readonly configService: ConfigService
+  ) {
+    this.googleApiKey = this.configService.get<string>('GOOGLE_MAPS_API_KEY');
+    this.opencageApiKey = this.configService.get<string>('OPENCAGE_API_KEY');
+  }
 
   async calculateDistance(origin: string, destination: string): Promise<GoogleDistanceMatrixResponse> {
     // use the google maps distance Matrix to calculate the distance between two locations

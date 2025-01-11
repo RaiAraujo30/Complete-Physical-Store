@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { StoreController } from './store.controller';
-import { StoreService } from './store.service';
+import { StoreService } from './services/store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { StoreType } from './enum/StoreType.enum';
 import { UpdateStoreDto } from './dto/update-store.dto';

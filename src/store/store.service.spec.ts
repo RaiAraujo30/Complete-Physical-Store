@@ -1,5 +1,5 @@
 import { Test, TestingModule } from '@nestjs/testing';
-import { StoreService } from './store.service';
+import { StoreService } from './services/store.service';
 import { getModelToken, MongooseModule } from '@nestjs/mongoose';
 import { Store, StoreSchema } from './entities/store.entity';
 import {
@@ -16,6 +16,10 @@ import { MapsService } from '../api/maps/maps.service';
 import { CorreiosService } from '../api/correios/correios.service';
 import { DeliveryCriteriaService } from '../delivery/delivery-criteria.service';
 import { HttpModule } from '@nestjs/axios';
+import { ShippingService } from './services/shipping.service';
+import { DistanceService } from './services/distance.service';
+import { PinService } from './services/Pin.service';
+import { ValidationService } from './services/validation.service';
 
 describe('StoreService Tests', () => {
   let service: StoreService;
@@ -45,6 +49,10 @@ describe('StoreService Tests', () => {
       ],
       providers: [
         StoreService,
+        ShippingService,
+        DistanceService,
+        PinService,
+        ValidationService,
         MapsService,
         CorreiosService,
         DeliveryCriteriaService,

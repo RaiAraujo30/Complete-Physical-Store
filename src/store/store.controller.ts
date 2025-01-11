@@ -1,12 +1,11 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query } from '@nestjs/common';
-import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Store } from './entities/store.entity';
-import { PaginatedResult } from 'src/utils/Pagination';
 import { ShippingStore } from './types/ShippingStore.interface';
 import { StorePin } from './types/StorePin.interface';
+import { StoreService } from './services/store.service';
 
 
 @Controller('store')
