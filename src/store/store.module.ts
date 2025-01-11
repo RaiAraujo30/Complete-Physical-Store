@@ -4,9 +4,9 @@ import { StoreController } from './store.controller';
 import { Store, StoreSchema } from './entities/store.entity';
 
 import { MongooseModule } from '@nestjs/mongoose';
-import { CorreiosModule } from 'src/api/correios/correios.module';
-import { MapsModule } from 'src/api/maps/maps.module';
-import { DeliveryCriteriaModule } from 'src/delivery/delivery-criteria.module';
+import { CorreiosModule } from '../api/correios/correios.module';
+import { MapsModule } from '../api/maps/maps.module';
+import { DeliveryCriteriaModule } from '../delivery/delivery-criteria.module';
 
 
 @Module({

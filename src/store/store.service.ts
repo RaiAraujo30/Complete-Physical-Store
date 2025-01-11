@@ -8,8 +8,8 @@ import { CorreiosService } from '../api/correios/correios.service';
 import { MapsService } from '../api/maps/maps.service';
 import { FreightValue, ShippingStore, StorePin } from './types/store.types';
 import { StoreType } from './enum/StoreType.enum';
-import { paginate, PaginatedResult } from 'src/utils/Pagination';
-import { DeliveryCriteriaService } from 'src/delivery/delivery-criteria.service';
+import { paginate, PaginatedResult } from '../utils/Pagination';
+import { DeliveryCriteriaService } from '../delivery/delivery-criteria.service';
 
 @Injectable()
 export class StoreService {
@@ -105,9 +105,12 @@ export class StoreService {
       .exec();
   }
   
-  async remove(id: string): Promise<void> {
-    await this.ensureStoreExists(id);
-    await this.storeModel.findByIdAndDelete(id).exec();
+  async remove(id: string): Promise<Store> {
+    const store = await this.storeModel.findByIdAndDelete(id).exec();
+    if (!store) {
+      throw new NotFoundException(`Store with ID ${id} not found`);
+    }
+    return store;
   }
 
   async findByState(
@@ -133,12 +136,6 @@ export class StoreService {
     }
   }
 
-  private async ensureStoreExists(id: string): Promise<void> {
-    const store = await this.storeModel.findById(id).exec();
-    if (!store) {
-      throw new NotFoundException(`Store with ID ${id} not found`);
-    }
-  }
   async calculateDistancesFromCep(cep: string): Promise<{ store: Store; distance: number }[]> {
     const stores = await this.listAll();
   
