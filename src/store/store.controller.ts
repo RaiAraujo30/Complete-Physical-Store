@@ -97,10 +97,4 @@ export class StoreController {
   }> {
     return this.storeService.getStoreWithShipping(cep, +limit, +offset);
   }
-
-  private validateCep(cep: string): void {
-    if (!cep || cep.trim() === '') {
-      throw new Error('CEP is required to calculate distances.');
-    }
-  }
 }

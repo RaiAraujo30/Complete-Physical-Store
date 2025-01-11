@@ -12,6 +12,7 @@ import { StorePin } from './types/StorePin.interface';
 import { StoreType } from './enum/StoreType.enum';
 import { paginate, PaginatedResult } from '../utils/Pagination';
 import { DeliveryCriteriaService } from '../delivery/delivery-criteria.service';
+import { AppError } from 'src/utils/AppError';
 
 @Injectable()
 export class StoreService {
@@ -28,15 +29,20 @@ export class StoreService {
     const address = `${createStoreDto.address1}, ${createStoreDto.city}, ${createStoreDto.state}, ${createStoreDto.country}, ${createStoreDto.postalCode}`;
 
     // automatically get the latitude and longitude from the address
-    const { lat, lng } = await this.mapsService.getGeocode(address);
-
-    const newStore = new this.storeModel({
-      ...createStoreDto,
-      latitude: lat,
-      longitude: lng,
-    });
-
-    return await newStore.save();
+    try {
+      const { lat, lng } = await this.mapsService.getGeocode(address);
+      
+      const newStore = new this.storeModel({
+        ...createStoreDto,
+        latitude: lat,
+        longitude: lng,
+      });
+      
+      return await newStore.save();
+    } catch (error) {
+      throw new AppError("Store creation failed", 500, "STORE_CREATION_ERROR", { cause: error.message });
+    }
+    
   }
 
   async listAll(
@@ -62,7 +68,7 @@ export class StoreService {
     const store = await this.storeModel.findById(id).exec();
   
     if (!store) {
-      throw new NotFoundException(`Store with ID ${id} not found`);
+      throw new AppError(`Store with ID ${id} not found`, 404, "STORE_NOT_FOUND", { id });
     }
   
     return {
@@ -77,7 +83,7 @@ export class StoreService {
     
     const existingStore = await this.storeModel.findById(id).exec();
     if (!existingStore) {
-      throw new Error(`Loja com ID ${id} não encontrada.`);
+      throw new AppError(`Store with ID ${id} not found`, 404, "STORE_NOT_FOUND", { id });
     }
   
     // see if any address fields have changed
@@ -95,11 +101,18 @@ export class StoreService {
       ${updateStoreDto.postalCode || existingStore.postalCode}`;
   
       // automatically get the latitude and longitude from the address
-      const { lat, lng } = await this.mapsService.getGeocode(newAddress);
-  
-      // update the latitude and longitude in the DTO
-      updateStoreDto.latitude = lat;
-      updateStoreDto.longitude = lng;
+      try{
+        const { lat, lng } = await this.mapsService.getGeocode(newAddress);
+    
+        // update the latitude and longitude in the DTO
+        updateStoreDto.latitude = lat;
+        updateStoreDto.longitude = lng;
+      } catch (error) {
+        throw new AppError("Address geocoding failed", 500, "ADDRESS_GEOCODING_ERROR", {
+          newAddress,
+          cause: error.message,
+        });
+      }
     }
   
     return this.storeModel
@@ -110,7 +123,7 @@ export class StoreService {
   async remove(id: string): Promise<Store> {
     const store = await this.storeModel.findByIdAndDelete(id).exec();
     if (!store) {
-      throw new NotFoundException(`Store with ID ${id} not found`);
+      throw new AppError(`Store with ID ${id} not found`, 404, "STORE_NOT_FOUND", { id });
     }
     return store;
   }
@@ -134,7 +147,7 @@ export class StoreService {
   
   private validateState(state: string): void {
     if (!state || state.length !== 2) {
-      throw new Error('Estado inválido. Use o formato "UF" (e.g., RS, SP).');
+      throw new AppError("Invalid state format. Use 'UF' (e.g., RS, SP).", 400, "INVALID_STATE_FORMAT", { state });
     }
   }
 
@@ -143,9 +156,17 @@ export class StoreService {
   
     const distances = await Promise.all(
       stores.stores.map(async (store) => {
-        const distance = await this.calculateDistances(cep, `${store.latitude},${store.longitude}`);
-        if (distance !== null) {
-          return { store, distance };
+        try{ 
+          const distance = await this.calculateDistances(cep, `${store.latitude},${store.longitude}`);
+          if (distance !== null) {
+            return { store, distance };
+          }
+        } catch (error) {
+            throw new AppError("Failed to calculate distance for store", 500, "DISTANCE_CALCULATION_ERROR", {
+              storeId: store.id,
+              cep,
+              cause: error.message,
+            });
         }
         return null;
       }),
@@ -170,8 +191,12 @@ export class StoreService {
       const distanceInMeters = response.rows[0]?.elements[0]?.distance?.value;
       return distanceInMeters !== undefined ? parseFloat((distanceInMeters / 1000).toFixed(1)) : null;
     } catch (error) {
-      console.error(`Erro ao calcular distância:`, error.message);
-      return null;
+        throw new AppError(
+          "Failed to calculate distance",
+          500,
+          "DISTANCE_CALCULATION_ERROR",
+          { origin, destination, cause: error.message }
+        );
     }
   }
 
@@ -186,16 +211,16 @@ export class StoreService {
     offset: number; 
     total: number 
   }> {
+    this.validateCep(cep);
     const validDistances = await this.calculateDistancesFromCep(cep);
     
     if (!validDistances) {
-      return {
-        stores: [],
-        pins: [],
-        limit,
-        offset,
-        total: 0,
-      };
+      throw new AppError(
+        "No stores found within the specified criteria",
+        404,
+        "NO_STORES_FOUND",
+        { cep }
+      );
     }
   
     const total = validDistances.length;
@@ -246,7 +271,12 @@ export class StoreService {
     const matchedCriterion = criteria.find((c) => distance <= c.maxDistance);
 
     if (!matchedCriterion) {
-      throw new Error('No delivery criteria found for the given distance.');
+      throw new AppError(
+        "No delivery criteria found for the given distance",
+        404,
+        "DELIVERY_CRITERIA_NOT_FOUND",
+        { distance }
+      );
     }
   
     return {
@@ -289,25 +319,28 @@ export class StoreService {
         })),
       };
     } catch (error) {
-      console.error(`Erro ao calcular frete para a loja ${store.storeName}:`, error.message);
-      return {
-        name: store.storeName,
-        city: store.city,
-        postalCode: store.postalCode,
-        type: store.type,
-        distance: `${distance} km`,
-        value: [
-          {
-            price: 'Indisponível',
-            prazo: 'Indisponível',
-            description: 'Erro ao calcular o frete',
-          },
-        ],
-      };
-    }
+      throw new AppError(
+        `Failed to calculate freight for store ${store.storeName}`,
+        500,
+        "FREIGHT_CALCULATION_ERROR",
+        {
+          storeName: store.storeName,
+          cepDestino: this.cleanCep(cep),
+          cepOrigem: this.cleanCep(store.postalCode),
+          cause: error.message,
+        }
+      );
+    };
+    
   }
 
   private cleanCep(cep: string): string {
     return cep.replace(/\D/g, '');
+  }
+
+  private validateCep(cep: string): void {
+    if (!cep || cep.trim() === '' || this.cleanCep(cep).length !== 8) {
+      throw new AppError("Invalid CEP format. Please provide a valid 8-digit CEP.", 400, "INVALID_CEP_FORMAT", { cep });
+    }
   }
 }

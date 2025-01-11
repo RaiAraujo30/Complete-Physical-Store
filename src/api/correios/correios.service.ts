@@ -1,6 +1,7 @@
 import { HttpService } from '@nestjs/axios';
 import { Injectable } from '@nestjs/common';
 import { firstValueFrom } from 'rxjs';
+import { AppError } from 'src/utils/AppError';
 
 @Injectable()
 export class CorreiosService {
@@ -32,8 +33,16 @@ export class CorreiosService {
 
       return response.data;
     } catch (error) {
-      console.error('Erro ao calcular frete via Correios:', error.message);
-      throw new Error('Erro ao calcular o frete via Correios.');
+      throw new AppError(
+        'Failed to calculate freight via Correios API',
+        502, // Bad Gateway, as it involves an external API
+        'CORREIOS_API_ERROR',
+        {
+          correiosUrl: this.correiosUrl,
+          payload,
+          error: error.message,
+        }
+      );
     }
   }
 }
