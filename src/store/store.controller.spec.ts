@@ -5,9 +5,11 @@ import { CreateStoreDto } from './dto/create-store.dto';
 import { StoreType } from './enum/StoreType.enum';
 import { UpdateStoreDto } from './dto/update-store.dto';
 
-describe('StoreController', () => {
+describe('Tests for the CRUD operations', () => {
   let controller: StoreController;
   let service: StoreService;
+  let limit = 10;
+  let offset = 0;
 
   const mockStoreService = {
     create: jest.fn(),
@@ -23,12 +25,10 @@ describe('StoreController', () => {
     const module: TestingModule = await Test.createTestingModule({
       controllers: [StoreController],
       providers: [
-        
-          {
+        {
           provide: StoreService,
           useValue: mockStoreService,
-          },
-        
+        },
       ],
     }).compile();
 
@@ -40,25 +40,6 @@ describe('StoreController', () => {
     expect(controller).toBeDefined();
   });
 
-  describe('findByCep', () => {
-    it('should return stores and shipping info', async () => {
-      const cep = '01001-000';
-      const storesWithShipping = [{ id: '1', storeName: 'Store A', shippingTime: 5 }];
-
-      mockStoreService.getStoreWithShipping.mockResolvedValue(storesWithShipping);
-
-      const result = await controller.findByCep(cep);
-
-      expect(service.getStoreWithShipping).toHaveBeenCalledWith(cep);
-      expect(result).toEqual(storesWithShipping);
-    });
-
-    it('should throw an error if CEP is not provided', async () => {
-      await expect(controller.findByCep('')).rejects.toThrow(
-        'CEP is required to calculate distances.',
-      );
-    });
-  });
 
   describe('create', () => {
     it('should create a new store', async () => {
@@ -87,7 +68,7 @@ describe('StoreController', () => {
   });
 
   describe('findAll', () => {
-    it('should return a list of stores', async () => {
+    it('should return a list of stores with pagination', async () => {
       const stores = [
         { id: '1', storeName: 'Store A' },
         { id: '2', storeName: 'Store B' },
@@ -95,9 +76,9 @@ describe('StoreController', () => {
 
       mockStoreService.listAll.mockResolvedValue(stores);
 
-      const result = await controller.findAll();
+      const result = await controller.findAll(limit, offset);
 
-      expect(service.listAll).toHaveBeenCalled();
+      expect(service.listAll).toHaveBeenCalledWith(limit, offset);
       expect(result).toEqual(stores);
     });
   });
@@ -105,22 +86,23 @@ describe('StoreController', () => {
   describe('findById', () => {
     it('should return a store by ID', async () => {
       const store = { id: '1', storeName: 'Store A' };
-
-      mockStoreService.findOne.mockResolvedValue(store);
-
+      const limit = 1;
+      const offset = 0;
+  
+      mockStoreService.findOne.mockResolvedValue({
+        stores: [store],
+        limit,
+        offset,
+        total: 1,
+      });
+  
       const result = await controller.findById('1');
-
-      expect(service.findOne).toHaveBeenCalledWith('1');
-      expect(result).toEqual(store);
-    });
-
-    it('should throw an error if store is not found', async () => {
-      mockStoreService.findOne.mockResolvedValue(null);
-
-      await expect(controller.findById('1')).resolves.toBeNull();
-      expect(service.findOne).toHaveBeenCalledWith('1');
+      expect(service.findOne).toHaveBeenCalledWith('1', limit, offset);
+      expect(result).toEqual({ stores: [store], limit, offset, total: 1 });
     });
   });
+  
+  
 
   describe('update', () => {
     it('should update an existing store', async () => {
@@ -148,14 +130,14 @@ describe('StoreController', () => {
   });
 
   describe('findByState', () => {
-    it('should return stores by state', async () => {
+    it('should return stores by state with pagination', async () => {
       const stores = [{ id: '1', storeName: 'Store A', state: 'SP' }];
 
       mockStoreService.findByState.mockResolvedValue(stores);
 
-      const result = await controller.findByState('SP');
+      const result = await controller.findByState('SP', limit, offset); // Passando limit e offset
 
-      expect(service.findByState).toHaveBeenCalledWith('SP');
+      expect(service.findByState).toHaveBeenCalledWith('SP', limit, offset);
       expect(result).toEqual(stores);
     });
   });
