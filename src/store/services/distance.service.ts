@@ -15,10 +15,17 @@ export class DistanceService {
     const distances = await Promise.all(
       stores.map(async (store) => {
         try {
-          const distance = await this.calculateDistances(
+          const response = await this.mapsService.calculateDistance(
             cep,
             `${store.latitude},${store.longitude}`,
           );
+          const distanceInMeters =
+            response.rows[0]?.elements[0]?.distance?.value;
+          const distance =
+            distanceInMeters !== undefined
+              ? parseFloat((distanceInMeters / 1000).toFixed(1))
+              : null;
+
           if (distance !== null) {
             return { store, distance };
           }
@@ -38,38 +45,14 @@ export class DistanceService {
       }),
     );
 
-    //TODO: Implementar com o uso de reduce
-    // ignores stores that are PDV and are more than 50km away
     const validDistances = distances.filter((item) => {
       if (!item) return false;
       if (item.store.type === StoreType.PDV && item.distance > 50) return false;
       return true;
     });
+
     if (validDistances.length === 0) return null;
 
     return validDistances.sort((a, b) => a.distance - b.distance);
-  }
-
-  private async calculateDistances(
-    origin: string,
-    destination: string,
-  ): Promise<number | null> {
-    try {
-      const response = await this.mapsService.calculateDistance(
-        origin,
-        destination,
-      );
-      const distanceInMeters = response.rows[0]?.elements[0]?.distance?.value;
-      return distanceInMeters !== undefined
-        ? parseFloat((distanceInMeters / 1000).toFixed(1))
-        : null;
-    } catch (error) {
-      throw new AppError(
-        'Failed to calculate distance',
-        500,
-        'DISTANCE_CALCULATION_ERROR',
-        { origin, destination, cause: error.message },
-      );
-    }
   }
 }
