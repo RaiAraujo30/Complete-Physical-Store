@@ -16,17 +16,3 @@ interface GoogleDistanceMatrixResponse {
     }[];
     status: string; 
 }
-
-interface Coordinates {
-  lat: number;
-  lng: number;
-}
-
-interface FallbackCoordinates {
-  origin: Coordinates;
-  destination: Coordinates;
-}
-
-interface OpenCageCoordinates extends Coordinates {
-  formatted: string;
-}

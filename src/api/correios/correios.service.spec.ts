@@ -93,7 +93,7 @@ describe('CorreiosService', () => {
 
       await expect(
         service.calculateFreight(freightRequestPayload),
-      ).rejects.toThrow('Erro ao calcular o frete via Correios.');
+      ).rejects.toThrow('Failed to calculate freight via Correios API');
 
       expect(mockHttpService.post).toHaveBeenCalledWith(
         'https://www.correios.com.br/@@precosEPrazosView',

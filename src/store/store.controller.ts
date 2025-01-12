@@ -1,11 +1,12 @@
 import { Controller, Get, Post, Body, Patch, Param, Delete, Put, Query } from '@nestjs/common';
-import { StoreService } from './store.service';
 import { CreateStoreDto } from './dto/create-store.dto';
 import { UpdateStoreDto } from './dto/update-store.dto';
 import { ApiOperation, ApiBody, ApiResponse, ApiParam } from '@nestjs/swagger';
 import { Store } from './entities/store.entity';
-import { PaginatedResult } from 'src/utils/Pagination';
-import { ShippingStore, StorePin } from './types/store.types';
+import { ShippingStore } from './types/ShippingStore.interface';
+import { StorePin } from './types/StorePin.interface';
+import { StoreService } from './services/store.service';
+
 
 @Controller('store')
 export class StoreController {
@@ -94,11 +95,5 @@ export class StoreController {
     total: number 
   }> {
     return this.storeService.getStoreWithShipping(cep, +limit, +offset);
-  }
-
-  private validateCep(cep: string): void {
-    if (!cep || cep.trim() === '') {
-      throw new Error('CEP is required to calculate distances.');
-    }
   }
 }

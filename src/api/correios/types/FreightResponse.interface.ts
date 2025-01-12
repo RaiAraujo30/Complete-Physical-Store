@@ -1,13 +1,4 @@
-interface FreightRequestPayload {
-    cepDestino: string;
-    cepOrigem: string;
-    comprimento: string;
-    largura: string;
-    altura: string;
-  }
-  
-
-  interface FreightResponse {
+interface FreightResponse {
     status: number;
     mensagemPrecoAgencia: string;
     prazo: string;
@@ -21,4 +12,3 @@ interface FreightRequestPayload {
     precoAgencia: string;
     urlTitulo: string;
   }
-  
