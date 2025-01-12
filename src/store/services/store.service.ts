@@ -12,7 +12,7 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DistanceService } from './distance.service';
 import { ValidationService } from './validation.service';
-import { PinService } from './Pin.service';
+import { createPin } from 'src/common/utils/pin-utils';
 
 @Injectable()
 export class StoreService {
@@ -21,7 +21,6 @@ export class StoreService {
     private readonly shippingService: ShippingService,
     private readonly distanceService: DistanceService,
     private readonly validationService: ValidationService,
-    private readonly pinService: PinService,
     @InjectModel(Store.name) private readonly storeModel: Model<Store>,
   ) {}
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
@@ -228,7 +227,7 @@ export class StoreService {
     const pins: StorePin[] = [];
 
     for (const { store, distance } of paginatedDistances) {
-      const pin = this.pinService.createPin(store);
+      const pin = createPin(store);
       pins.push(pin);
 
       let storeWithShipping: ShippingStore;
