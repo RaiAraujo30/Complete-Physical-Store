@@ -9,6 +9,7 @@ import { ShippingService } from './services/shipping.service';
 import { StoreService } from './services/store.service';
 import { DistanceService } from './services/distance.service';
 import { ValidationService } from './services/validation.service';
+import { LoggerService } from 'src/config/Logger';
 
 
 @Module({
@@ -19,7 +20,7 @@ import { ValidationService } from './services/validation.service';
     DeliveryCriteriaModule
   ],
   controllers: [StoreController],
-  providers: [StoreService, ShippingService, DistanceService, ValidationService],
+  providers: [StoreService, ShippingService, DistanceService, ValidationService, LoggerService],
   exports: [StoreService, DistanceService, ShippingService, ValidationService],
 })
 export class StoreModule {}

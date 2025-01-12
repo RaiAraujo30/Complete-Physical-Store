@@ -3,9 +3,10 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 import { AppModule } from './app.module';
 import { AllExceptionsFilter } from './common/exceptions/AllExceptionsFilter';
 import { Logger } from '@nestjs/common';
+import { LoggerService } from './config/Logger';
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  const logger = new Logger('Bootstrap');
+  const logger = app.get(LoggerService);
   app.useGlobalFilters(new AllExceptionsFilter());
 
   // Swagger Config

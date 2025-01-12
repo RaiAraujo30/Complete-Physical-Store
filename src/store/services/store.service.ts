@@ -13,6 +13,7 @@ import { Model } from 'mongoose';
 import { DistanceService } from './distance.service';
 import { ValidationService } from './validation.service';
 import { createPin } from 'src/common/utils/pin-utils';
+import { LoggerService } from 'src/config/Logger';
 
 @Injectable()
 export class StoreService {
@@ -22,6 +23,7 @@ export class StoreService {
     private readonly distanceService: DistanceService,
     private readonly validationService: ValidationService,
     @InjectModel(Store.name) private readonly storeModel: Model<Store>,
+    private readonly logger: LoggerService
   ) {}
   async create(createStoreDto: CreateStoreDto): Promise<Store> {
     const address = `${createStoreDto.address1}, ${createStoreDto.city}, ${createStoreDto.state}, ${createStoreDto.country}, ${createStoreDto.postalCode}`;
@@ -143,7 +145,6 @@ export class StoreService {
         );
       }
     }
-
     return this.storeModel
       .findByIdAndUpdate(id, { $set: updateStoreDto }, { new: true })
       .exec();
@@ -201,6 +202,7 @@ export class StoreService {
     total: number;
   }> {
     this.validationService.validateCep(cep);
+    this.logger.log(`Getting stores with shipping for CEP ${cep}`);
     
     // get all the stores here to avoid creating a circular dependency on distanceService
     const allStores = await this.listAll();
@@ -219,6 +221,7 @@ export class StoreService {
     }
 
     const total = validDistances.length;
+    this.logger.log(`Found ${total} stores for CEP ${cep}`);
 
     // Paginate the results
     const paginatedDistances = validDistances.slice(offset, offset + limit);

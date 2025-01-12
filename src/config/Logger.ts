@@ -1,25 +1,39 @@
-import { WinstonModuleOptions, utilities } from 'nest-winston';
-import * as winston from 'winston';
+import { Injectable } from '@nestjs/common';
+import { Logger, createLogger, transports, format } from 'winston';
 
-export const winstonConfig: WinstonModuleOptions = {
-    transports: [
-        new winston.transports.Console({
-            format: winston.format.combine(
-                winston.format.timestamp(),
-                winston.format.colorize({ all: true }),
-                winston.format.printf(({ level, message, timestamp }) => {
-                    const colorizer = winston.format.colorize();
-                    return `[${timestamp}] ${colorizer.colorize(level, level)}: ${message}`;
-                }),
-            ),
+@Injectable()
+export class LoggerService {
+  private logger: Logger;
+
+  constructor() {
+    this.logger = createLogger({
+      level: 'info',
+      format: format.combine(
+        format.timestamp(),
+        format.printf(({ timestamp, level, message }) => {
+          return `${timestamp} [${level.toUpperCase()}]: ${message}`;
         }),
-        new winston.transports.File({
-            filename: 'logs/error.log',
-            level: 'error',
-            format: winston.format.combine(
-                winston.format.timestamp(),
-                winston.format.json(),
-            ),
-        }),
-    ],
-};
+      ),
+      transports: [
+        new transports.Console(),
+        new transports.File({ filename: 'application.log' }),
+      ],
+    });
+  }
+
+  log(message: string) {
+    this.logger.info(message);
+  }
+
+  error(message: string) {
+    this.logger.error(message);
+  }
+
+  warn(message: string) {
+    this.logger.warn(message);
+  }
+
+  debug(message: string) {
+    this.logger.debug(message);
+  }
+}
