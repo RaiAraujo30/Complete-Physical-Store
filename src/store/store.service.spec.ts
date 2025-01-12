@@ -18,8 +18,9 @@ import { DeliveryCriteriaService } from '../delivery/delivery-criteria.service';
 import { HttpModule } from '@nestjs/axios';
 import { ShippingService } from './services/shipping.service';
 import { DistanceService } from './services/distance.service';
-import { PinService } from './services/Pin.service';
+import { createPin } from '../common/utils/pin-utils';
 import { ValidationService } from './services/validation.service';
+import { LoggerService } from '../config/Logger';
 
 describe('StoreService Tests', () => {
   let service: StoreService;
@@ -51,11 +52,11 @@ describe('StoreService Tests', () => {
         StoreService,
         ShippingService,
         DistanceService,
-        PinService,
         ValidationService,
         MapsService,
         CorreiosService,
         DeliveryCriteriaService,
+        LoggerService,
       ],
     }).compile();
 

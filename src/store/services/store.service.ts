@@ -12,8 +12,8 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DistanceService } from './distance.service';
 import { ValidationService } from './validation.service';
-import { createPin } from 'src/common/utils/pin-utils';
-import { LoggerService } from 'src/config/Logger';
+import { createPin } from '../../common/utils/pin-utils';
+import { LoggerService } from '../../config/Logger';
 
 @Injectable()
 export class StoreService {
