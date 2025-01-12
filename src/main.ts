@@ -11,9 +11,12 @@ async function bootstrap() {
 
   // Swagger Config
   const config = new DocumentBuilder()
-    .setTitle('Store API')
-    .setDescription('API for managing stores and shipping info')
-    .setVersion('1.0')
+    .setTitle('Physical Store API')
+    .setDescription(
+      'API for managing store data and shipping operations, including CRUD operations, distance calculations, and shipping details.',
+    )
+    
+        .setVersion('1.0')
     .build();
 
   const document = SwaggerModule.createDocument(app, config);
