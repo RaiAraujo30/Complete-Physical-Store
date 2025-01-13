@@ -4,15 +4,15 @@ import { ShippingStore } from '../types/ShippingStore.interface';
 import { CorreiosService } from '../../api/correios/correios.service';
 import { DeliveryCriteriaService } from '../../delivery/delivery-criteria.service';
 import { AppError } from '../../common/exceptions/AppError';
-import { ValidationService } from './validation.service';
 import { FreightValue } from '../types/FreightValue.interface';
+import { cleanCep } from '../utils/validation.utils';
 
 @Injectable()
 export class ShippingService {
   constructor(
     private readonly deliveryCriteriaService: DeliveryCriteriaService,
     private readonly correiosService: CorreiosService,
-    private readonly validationService: ValidationService,
+    
   ) {}
   async createPdvStoreWithFixedShipping(
     store: Store,
@@ -54,8 +54,8 @@ export class ShippingService {
   ): Promise<ShippingStore> {
     try {
       const freightValues = await this.correiosService.calculateFreight({
-        cepDestino: this.validationService.cleanCep(cep),
-        cepOrigem: this.validationService.cleanCep(store.postalCode),
+        cepDestino: cleanCep(cep),
+        cepOrigem: cleanCep(store.postalCode),
         comprimento: '30',
         largura: '15',
         altura: '10',
@@ -80,8 +80,8 @@ export class ShippingService {
         'FREIGHT_CALCULATION_ERROR',
         {
           storeName: store.storeName,
-          cepDestino: this.validationService.cleanCep(cep),
-          cepOrigem: this.validationService.cleanCep(store.postalCode),
+          cepDestino: cleanCep(cep),
+          cepOrigem: cleanCep(store.postalCode),
           cause: error.message,
         },
       );

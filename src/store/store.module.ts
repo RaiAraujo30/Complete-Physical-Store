@@ -8,8 +8,7 @@ import { DeliveryCriteriaModule } from '../delivery/delivery-criteria.module';
 import { ShippingService } from './services/shipping.service';
 import { StoreService } from './services/store.service';
 import { DistanceService } from './services/distance.service';
-import { ValidationService } from './services/validation.service';
-import { LoggerService } from 'src/config/Logger';
+import { LoggerService } from '../config/Logger';
 
 
 @Module({
@@ -20,7 +19,6 @@ import { LoggerService } from 'src/config/Logger';
     DeliveryCriteriaModule
   ],
   controllers: [StoreController],
-  providers: [StoreService, ShippingService, DistanceService, ValidationService, LoggerService],
-  exports: [StoreService, DistanceService, ShippingService, ValidationService],
+  providers: [StoreService, ShippingService, DistanceService, LoggerService],
 })
 export class StoreModule {}
