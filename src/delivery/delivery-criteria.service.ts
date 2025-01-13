@@ -9,11 +9,11 @@ export class DeliveryCriteriaService {
     @InjectModel(DeliveryCriteria.name) private readonly criteriaModel: Model<DeliveryCriteria>,
   ) {}
 
+  // already sorted by maxDistance in ascending order 
   async findAllSorted(): Promise<DeliveryCriteria[]> {
     return this.criteriaModel.find().sort({ maxDistance: 1 }).exec(); 
   }
   
-
   async create(criteria: Partial<DeliveryCriteria>): Promise<DeliveryCriteria> {
     const newCriteria = new this.criteriaModel(criteria);
     return newCriteria.save();

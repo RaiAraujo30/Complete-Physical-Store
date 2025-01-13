@@ -8,6 +8,6 @@ import { DeliveryCriteriaController } from './delivery-criteria.controller';
   imports: [MongooseModule.forFeature([{ name: DeliveryCriteria.name, schema: DeliveryCriteriaSchema }])],
   controllers: [DeliveryCriteriaController],
   providers: [DeliveryCriteriaService],
-  exports: [DeliveryCriteriaService],
+  exports: [DeliveryCriteriaService, MongooseModule],
 })
 export class DeliveryCriteriaModule {}

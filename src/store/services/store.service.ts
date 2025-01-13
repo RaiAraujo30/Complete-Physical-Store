@@ -2,7 +2,7 @@ import { forwardRef, Inject, Injectable } from '@nestjs/common';
 import { CreateStoreDto } from '../dto/create-store.dto';
 import { Store } from '../entities/store.entity';
 import { AppError } from '../../common/exceptions/AppError';
-import { paginate } from '../../common/utils/Pagination';
+import { paginate } from '../utils/Pagination';
 import { UpdateStoreDto } from '../dto/update-store.dto';
 import { ShippingStore } from '../types/ShippingStore.interface';
 import { StorePin } from '../types/StorePin.interface';
@@ -11,9 +11,9 @@ import { ShippingService } from './shipping.service';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { DistanceService } from './distance.service';
-import { ValidationService } from './validation.service';
-import { createPin } from '../../common/utils/pin-utils';
+import { createPin } from '../utils/pin.utils';
 import { LoggerService } from '../../config/Logger';
+import { validateCep, validateState } from '../utils/validation.utils';
 
 @Injectable()
 export class StoreService {
@@ -21,7 +21,6 @@ export class StoreService {
     private readonly mapsService: MapsService,
     private readonly shippingService: ShippingService,
     private readonly distanceService: DistanceService,
-    private readonly validationService: ValidationService,
     @InjectModel(Store.name) private readonly storeModel: Model<Store>,
     private readonly logger: LoggerService
   ) {}
@@ -173,7 +172,7 @@ export class StoreService {
     offset: number;
     total: number;
   }> {
-    this.validationService.validateState(state);
+    validateState(state);
 
     const paginatedResult = await paginate(
       this.storeModel,
@@ -201,11 +200,13 @@ export class StoreService {
     offset: number;
     total: number;
   }> {
-    this.validationService.validateCep(cep);
+    validateCep(cep);
     this.logger.log(`Getting stores with shipping for CEP ${cep}`);
     
     // get all the stores here to avoid creating a circular dependency on distanceService
     const allStores = await this.listAll();
+
+    // calculate the distances from the CEP to all stores
     const validDistances = await this.distanceService.calculateDistancesFromCep(
       cep,
       allStores.stores,
@@ -229,6 +230,7 @@ export class StoreService {
     const storesWithShipping: ShippingStore[] = [];
     const pins: StorePin[] = [];
 
+    // loop through the paginated distances and create the pins and shipping info(pdv/store)
     for (const { store, distance } of paginatedDistances) {
       const pin = createPin(store);
       pins.push(pin);

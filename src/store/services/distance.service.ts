@@ -12,15 +12,22 @@ export class DistanceService {
     cep: string,
     stores: Store[],
   ): Promise<{ store: Store; distance: number }[]> {
+    // calculate distances for all stores in parallel
     const distances = await Promise.all(
       stores.map(async (store) => {
         try {
+
+          // use the MapsService to calculate the distance between the given cep and the store's location
           const response = await this.mapsService.calculateDistance(
             cep,
             `${store.latitude},${store.longitude}`,
           );
+
+          // extract the distance in meters from the api response
           const distanceInMeters =
             response.rows[0]?.elements[0]?.distance?.value;
+
+          // convert meters to kilometers and round to 1 
           const distance =
             distanceInMeters !== undefined
               ? parseFloat((distanceInMeters / 1000).toFixed(1))
@@ -45,6 +52,7 @@ export class DistanceService {
       }),
     );
 
+    // pdvs that are more than 50km away are ignored and ignore null results
     const validDistances = distances.filter((item) => {
       if (!item) return false;
       if (item.store.type === StoreType.PDV && item.distance > 50) return false;
