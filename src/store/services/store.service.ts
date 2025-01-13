@@ -205,6 +205,8 @@ export class StoreService {
     
     // get all the stores here to avoid creating a circular dependency on distanceService
     const allStores = await this.listAll();
+
+    // calculate the distances from the CEP to all stores
     const validDistances = await this.distanceService.calculateDistancesFromCep(
       cep,
       allStores.stores,
@@ -228,6 +230,7 @@ export class StoreService {
     const storesWithShipping: ShippingStore[] = [];
     const pins: StorePin[] = [];
 
+    // loop through the paginated distances and create the pins and shipping info(pdv/store)
     for (const { store, distance } of paginatedDistances) {
       const pin = createPin(store);
       pins.push(pin);

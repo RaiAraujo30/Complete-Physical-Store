@@ -135,7 +135,7 @@ describe('Tests for the CRUD operations', () => {
 
       mockStoreService.findByState.mockResolvedValue(stores);
 
-      const result = await controller.findByState('SP', limit, offset); // Passando limit e offset
+      const result = await controller.findByState('SP', limit, offset);
 
       expect(service.findByState).toHaveBeenCalledWith('SP', limit, offset);
       expect(result).toEqual(stores);

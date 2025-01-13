@@ -8,6 +8,7 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const ctx = host.switchToHttp();
     const response = ctx.getResponse<Response>();
 
+    // check if the exception is an instance of appError
     if (exception instanceof AppError) {
       response.status(exception.statusCode).json({
         statusCode: exception.statusCode,
@@ -16,10 +17,14 @@ export class AllExceptionsFilter implements ExceptionFilter {
         details: exception.details,
       });
     } else if (exception instanceof HttpException) {
+
+      // handle exceptions that are already HttpExceptions
       const status = exception.getStatus();
-      const message = exception.getResponse();
+      const message = exception.getResponse(); // captures detailed response for the HttpException
       response.status(status).json({ statusCode: status, message });
     } else {
+
+      // fallback for any other unhandled exceptions
       response.status(500).json({
         statusCode: 500,
         message: 'Internal server error',

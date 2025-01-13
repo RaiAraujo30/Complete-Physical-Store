@@ -14,12 +14,14 @@ export class ShippingService {
     private readonly correiosService: CorreiosService,
     
   ) {}
+  // Pdvs doesn't have dynamic shipping values
   async createPdvStoreWithFixedShipping(
     store: Store,
     distance: number,
   ): Promise<ShippingStore> {
     const criteria = await this.deliveryCriteriaService.findAllSorted();
 
+    // Find the delivery criteria that matches the distance
     const matchedCriterion = criteria.find((c) => distance <= c.maxDistance);
 
     if (!matchedCriterion) {
@@ -69,6 +71,7 @@ export class ShippingService {
         distance: `${distance} km`,
         value: freightValues.map((freight: FreightValue) => ({
           price: freight.precoAgencia,
+          // Adding the stores shipping time to the correios shipping time
           prazo: `${parseInt(store.shippingTimeInDays.toString(), 10) + parseInt(freight.prazo, 10)} dias úteis`,
           description: freight.urlTitulo,
         })),
